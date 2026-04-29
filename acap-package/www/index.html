@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ATD Motion Detector</title>
+    <style>
+        body {
+            font-family: 'Courier New', monospace;
+            background-color: #0f172a;
+            color: white;
+            margin: 0;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #dc2626;
+            padding-bottom: 10px;
+        }
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .logo div {
+            width: 40px;
+            height: 40px;
+            background-color: #dc2626;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: white;
+        }
+        .stats {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        .stat {
+            background-color: #1e293b;
+            padding: 15px;
+            border-radius: 5px;
+            border: 1px solid #374151;
+            min-width: 150px;
+        }
+        .stat-title {
+            color: #9ca3af;
+            font-size: 12px;
+            margin-bottom: 5px;
+        }
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #dc2626;
+        }
+        .display-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        .display-panel {
+            background-color: #1e293b;
+            border: 1px solid #dc2626;
+            border-radius: 5px;
+            padding: 15px;
+        }
+        .panel-title {
+            color: white;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+        .canvas {
+            width: 100%;
+            max-width: 600px;
+            height: 400px;
+            background-color: #0f172a;
+            border: 1px solid #374151;
+        }
+        .footer {
+            margin-top: 20px;
+            padding-top: 10px;
+            border-top: 1px solid #374151;
+            color: #6b7280;
+            font-size: 12px;
+        }
+        .status-indicator {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            background-color: #dc2626;
+            border-radius: 50%;
+            margin-right: 5px;
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="logo">
+            <div>R</div>
+            <div>
+                <h1 style="margin: 0; font-size: 18px;">PHALANX TRACKING</h1>
+                <p style="margin: 0; font-size: 10px; color: #dc2626;">MULTI-TARGET DETECTION</p>
+            </div>
+        </div>
+        <div style="color: #9ca3af; font-size: 14px;">
+            <span class="status-indicator"></span>
+            SYSTEM ACTIVE
+        </div>
+    </div>
+
+    <div class="stats">
+        <div class="stat">
+            <div class="stat-title">ACTIVE LOCKS</div>
+            <div class="stat-value" id="activeLocks">0</div>
+        </div>
+        <div class="stat">
+            <div class="stat-title">TOTAL SUBJECTS</div>
+            <div class="stat-value" id="totalSubjects">0</div>
+        </div>
+        <div class="stat">
+            <div class="stat-title">RESPONSE TIME</div>
+            <div class="stat-value">16ms</div>
+        </div>
+        <div class="stat">
+            <div class="stat-title">SPECTRUM</div>
+            <div class="stat-value">FULL RGB</div>
+        </div>
+    </div>
+
+    <div class="display-grid">
+        <div class="display-panel">
+            <div class="panel-title">TACTICAL DISPLAY</div>
+            <canvas id="floorplan" class="canvas" width="600" height="400"></canvas>
+        </div>
+        <div class="display-panel">
+            <div class="panel-title">THERMAL DENSITY</div>
+            <canvas id="heatmap" class="canvas" width="600" height="400"></canvas>
+        </div>
+    </div>
+
+    <div class="footer">
+        <div style="display: flex; justify-content: space-between;">
+            <span>PHALANX v5.0 • INCLUSIVE SPECTRUM TRACKING</span>
+            <span>SYSTEM STATUS: ARMED</span>
+        </div>
+    </div>
+
+    <script>
+        var activeLocks = 0;
+        var totalSubjects = 0;
+
+        function updateStats() {
+            document.getElementById('activeLocks').textContent = activeLocks;
+            document.getElementById('totalSubjects').textContent = totalSubjects;
+        }
+
+        function updateDisplay() {
+            // This will be replaced by server-sent data
+            // For now, simulate some activity
+            if (Math.random() < 0.1) {
+                activeLocks = Math.floor(Math.random() * 5);
+                totalSubjects = activeLocks + Math.floor(Math.random() * 10);
+                updateStats();
+            }
+
+            // Draw some sample data on canvases
+            var ctx = document.getElementById('floorplan').getContext('2d');
+            ctx.clearRect(0, 0, 600, 400);
+
+            // Draw grid
+            ctx.strokeStyle = '#374151';
+            ctx.lineWidth = 1;
+            for (var i = 0; i <= 600; i += 60) {
+                ctx.beginPath();
+                ctx.moveTo(i, 0);
+                ctx.lineTo(i, 400);
+                ctx.stroke();
+            }
+            for (var i = 0; i <= 400; i += 40) {
+                ctx.beginPath();
+                ctx.moveTo(0, i);
+                ctx.lineTo(600, i);
+                ctx.stroke();
+            }
+
+            // Draw sample targets
+            ctx.fillStyle = '#dc2626';
+            for (var i = 0; i < activeLocks; i++) {
+                var x = Math.random() * 600;
+                var y = Math.random() * 400;
+                ctx.beginPath();
+                ctx.arc(x, y, 5, 0, 2 * Math.PI);
+                ctx.fill();
+            }
+
+            var hctx = document.getElementById('heatmap').getContext('2d');
+            hctx.clearRect(0, 0, 600, 400);
+
+            // Draw sample heatmap
+            for (var x = 0; x < 10; x++) {
+                for (var y = 0; y < 10; y++) {
+                    var intensity = Math.random();
+                    var color = getHeatmapColor(intensity);
+                    hctx.fillStyle = color;
+                    hctx.fillRect(x * 60, y * 40, 60, 40);
+                }
+            }
+        }
+
+        function getHeatmapColor(intensity) {
+            if (intensity < 0.2) return '#3b82f6';
+            if (intensity < 0.4) return '#06b6d4';
+            if (intensity < 0.6) return '#eab308';
+            if (intensity < 0.8) return '#f97316';
+            return '#dc2626';
+        }
+
+        // Update display every 500ms
+        setInterval(updateDisplay, 500);
+
+        // Initial update
+        updateDisplay();
+    </script>
+</body>
+</html>

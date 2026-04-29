@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<application>
+  <general>
+    <name>ATD Motion Detector</name>
+    <version>1.0.0</version>
+    <vendor>Independent Developer</vendor>
+    <description>Autonomous Trauma Detection system for motion tracking and emergency response</description>
+    <id>atd.motion.detector</id>
+  </general>
+  <accessibility>
+    <web>
+      <pluginpage>index.html</pluginpage>
+      <port>8080</port>
+    </web>
+  </accessibility>
+  <security>
+    <capabilities>
+      <capability>network.mjpeg.export</capability>
+      <capability>network.http.export</capability>
+      <capability>camera.access</capability>
+    </capabilities>
+  </security>
+  <release>
+    <notes>Native C++ implementation for better performance and older camera compatibility</notes>
+    <version>1.0</version>
+  </release>
+</application>
