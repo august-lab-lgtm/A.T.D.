@@ -1,25 +1,13 @@
+#include <algorithm>
+#include <chrono>
 #include <iostream>
-#include <vector>
-#include <map>
 #include <string>
+#include <thread>
+#include <vector>
 #include <ctime>
 #include <opencv2/opencv.hpp>
 #include <opencv2/highgui.hpp>
 #include <opencv2/video.hpp>
-#include <boost/asio.hpp>
-#include <boost/beast.hpp>
-#include <nlohmann/json.hpp>
-
-// Axis ACAP includes
-#include <axis/axis.h>
-#include <axis/http_server.h>
-#include <axis/camera.h>
-
-namespace beast = boost::beast;
-namespace http = beast::http;
-namespace net = boost::asio;
-using tcp = boost::asio::ip::tcp;
-using json = nlohmann::json;
 
 struct Point {
     double x, y;
@@ -62,28 +50,16 @@ private:
     const int GRID_SIZE = 10;
     const cv::Size BOUNDS = cv::Size(600, 400);
 
-    // HTTP server for web interface
-    net::io_context ioc;
-    tcp::acceptor acceptor;
-    std::thread serverThread;
-
 public:
-    ATDMotionDetector() : acceptor(ioc, tcp::endpoint(tcp::v4(), 8080)), currentCount(0) {
+    ATDMotionDetector() : currentCount(0) {
         // Initialize camera
         if (!cap.open(0)) {
             std::cerr << "Error opening camera" << std::endl;
         }
-
-        // Start HTTP server
-        startServer();
     }
 
     ~ATDMotionDetector() {
         cap.release();
-        ioc.stop();
-        if (serverThread.joinable()) {
-            serverThread.join();
-        }
     }
 
     void run() {
@@ -261,100 +237,6 @@ private:
         }
     }
 
-    void startServer() {
-        serverThread = std::thread([this]() {
-            try {
-                std::cout << "Starting HTTP server on port 8080" << std::endl;
-                ioc.run();
-            } catch (const std::exception& e) {
-                std::cerr << "Server error: " << e.what() << std::endl;
-            }
-        });
-
-        // Set up route handlers
-        setupRoutes();
-    }
-
-    void setupRoutes() {
-        // Main page
-        http::response<http::string_body> res{http::status::ok, 11};
-        res.set(http::field::server, "ATD Motion Detector");
-        res.set(http::field::content_type, "text/html");
-        res.body() = generateHTML();
-        res.prepare_payload();
-
-        // TODO: Add proper routing
-    }
-
-    std::string generateHTML() {
-        std::stringstream html;
-        html << "<!DOCTYPE html><html><head><title>ATD Motion Detector</title>";
-        html << "<style>";
-        html << "body { font-family: monospace; background: #0f172a; color: white; margin: 0; padding: 20px; }";
-        html << ".header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }";
-        html << ".stats { display: flex; gap: 20px; margin-bottom: 20px; }";
-        html << ".stat { background: #1e293b; padding: 15px; border-radius: 5px; border: 1px solid #dc2626; }";
-        html << ".canvas { border: 1px solid #dc2626; background: #1e293b; }";
-        html << "</style></head><body>";
-
-        html << "<div class='header'>";
-        html << "<h1>PHALANX TRACKING</h1>";
-        html << "<div>Active Targets: " << trackedTargets.size() << "</div>";
-        html << "</div>";
-
-        html << "<div class='stats'>";
-        html << "<div class='stat'>Active Locks: " << trackedTargets.size() << "</div>";
-        html << "<div class='stat'>Total Subjects: " << currentCount << "</div>";
-        html << "<div class='stat'>Response Time: 16ms</div>";
-        html << "<div class='stat'>Spectrum: FULL RGB</div>";
-        html << "</div>";
-
-        html << "<canvas id='floorplan' class='canvas' width='600' height='400'></canvas>";
-        html << "<canvas id='heatmap' class='canvas' width='600' height='400'></canvas>";
-
-        html << "<script>";
-        html << "function updateDisplay() {";
-        html << "  var ctx = document.getElementById('floorplan').getContext('2d');";
-        html << "  ctx.clearRect(0, 0, 600, 400);";
-
-        // Draw people
-        for (const auto& person : people) {
-            html << "  ctx.fillStyle = 'rgba(255, 255, 255, " << person.opacity << ")';";
-            html << "  ctx.fillRect(" << person.position.x - 2 << ", " << person.position.y - 2 << ", 4, 4);";
-        }
-
-        // Draw tracked targets
-        for (const auto& target : trackedTargets) {
-            html << "  ctx.fillStyle = 'rgba(220, 38, 38, 0.8)';";
-            html << "  ctx.fillRect(" << target.x - 3 << ", " << target.y - 3 << ", 6, 6);";
-        }
-
-        html << "  var hctx = document.getElementById('heatmap').getContext('2d');";
-        html << "  hctx.clearRect(0, 0, 600, 400);";
-
-        // Draw heatmap
-        for (const auto& cell : heatmapGrid) {
-            double intensity = cell.intensity;
-            std::string color = getHeatmapColor(intensity);
-            html << "  hctx.fillStyle = '" << color << "';";
-            html << "  hctx.fillRect(" << cell.x * 60 << ", " << cell.y * 40 << ", 60, 40);";
-        }
-
-        html << "}";
-        html << "setInterval(updateDisplay, 500);";
-        html << "</script>";
-
-        html << "</body></html>";
-        return html.str();
-    }
-
-    std::string getHeatmapColor(double intensity) {
-        if (intensity < 0.2) return "#3b82f6"; // blue
-        if (intensity < 0.4) return "#06b6d4"; // cyan
-        if (intensity < 0.6) return "#eab308"; // yellow
-        if (intensity < 0.8) return "#f97316"; // orange
-        return "#dc2626"; // red
-    }
 };
 
 int main() {

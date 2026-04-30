@@ -8,10 +8,6 @@ LDFLAGS = -pthread
 OPENCV_CFLAGS = $(shell pkg-config --cflags opencv4)
 OPENCV_LIBS = $(shell pkg-config --libs opencv4)
 
-# Boost
-BOOST_CFLAGS = -I/usr/include/boost
-BOOST_LIBS = -lboost_system -lboost_thread
-
 # Axis SDK (uncomment if available)
 # AXIS_CFLAGS = -I/opt/axis/sdk/include
 # AXIS_LIBS = -L/opt/axis/sdk/lib -laxis_http_server -laxis_camera
@@ -25,10 +21,10 @@ OBJECTS = $(SOURCES:.cpp=.o)
 all: $(TARGET)
 
 $(TARGET): $(OBJECTS)
-	$(CXX) $(OBJECTS) -o $@ $(LDFLAGS) $(OPENCV_LIBS) $(BOOST_LIBS)
+	$(CXX) $(OBJECTS) -o $@ $(LDFLAGS) $(OPENCV_LIBS)
 
 %.o: %.cpp
-	$(CXX) $(CXXFLAGS) $(OPENCV_CFLAGS) $(BOOST_CFLAGS) -c $< -o $@
+	$(CXX) $(CXXFLAGS) $(OPENCV_CFLAGS) -c $< -o $@
 
 clean:
 	rm -f $(OBJECTS) $(TARGET)

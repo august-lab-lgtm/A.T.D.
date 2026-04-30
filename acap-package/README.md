@@ -7,7 +7,7 @@ This is a C++ implementation of the Autonomous Trauma Detection (ATD) system, pa
 - **Motion Detection**: Real-time motion detection using OpenCV
 - **Multi-Target Tracking**: Tracks multiple moving objects simultaneously
 - **Heatmap Generation**: Visualizes activity density
-- **Web Interface**: Built-in HTTP server for web-based monitoring
+- **Web Interface**: Static ACAP web page for monitoring
 - **Older Camera Compatibility**: Native C++ implementation works on older Axis camera models
 
 ## Requirements
@@ -15,7 +15,7 @@ This is a C++ implementation of the Autonomous Trauma Detection (ATD) system, pa
 ### Development
 - CMake 3.10+
 - OpenCV 4.x
-- Boost 1.70+
+
 - Axis ACAP SDK (for camera-specific features)
 - C++17 compatible compiler
 
@@ -29,7 +29,7 @@ This is a C++ implementation of the Autonomous Trauma Detection (ATD) system, pa
    ```bash
    # Ubuntu/Debian
    sudo apt-get update
-   sudo apt-get install cmake libopencv-dev libboost-all-dev build-essential
+   sudo apt-get install cmake libopencv-dev build-essential
    ```
 
 2. Build the application:
@@ -64,12 +64,12 @@ The application can be configured through the camera's web interface:
 
 ### C++ Components
 - `main.cpp`: Main application logic with OpenCV motion detection
-- HTTP server using Boost.Beast for web interface
+- Minimal Axis-compatible runtime for older cameras
 - Real-time video processing and target tracking
 
 ### Web Interface
-- `www/index.html`: Canvas-based visualization
-- Real-time updates via polling
+- `www/index.html`: Static visualization page served by ACAP
+- Works through the camera's built-in web plugin support
 - Compatible with older browser versions
 
 ### ACAP Integration
@@ -83,7 +83,7 @@ This C++ implementation is designed to work with older Axis camera models:
 
 - ✅ Native C++ performance (no JavaScript dependencies)
 - ✅ OpenCV for robust computer vision
-- ✅ Embedded HTTP server (no external web server needed)
+- ✅ Static ACAP web page served by the camera
 - ✅ Minimal resource requirements
 - ✅ Compatible with firmware versions 4.x and later
 
@@ -101,7 +101,7 @@ The application provides the following HTTP endpoints:
 ### Build Issues
 - Ensure all dependencies are installed
 - Check CMake version (3.10+ required)
-- Verify OpenCV and Boost installations
+- Verify OpenCV installation
 
 ### Camera Installation
 - Ensure camera has sufficient storage space (4MB+)
@@ -111,7 +111,7 @@ The application provides the following HTTP endpoints:
 ### Runtime Issues
 - Check camera system logs for error messages
 - Ensure camera has video feed access
-- Verify HTTP server is running on port 8080
+- Verify the camera web interface is serving the application page
 - Check for OpenCV library compatibility
 
 ## File Structure
@@ -136,7 +136,7 @@ acap-package/
 ## Development Notes
 
 - The application uses OpenCV for motion detection and tracking
-- Boost.Beast provides HTTP server functionality
+- The ACAP web page is served through the camera's built-in web plugin
 - Canvas-based visualization for broad browser compatibility
 - Designed for resource-constrained embedded systems
 

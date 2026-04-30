@@ -15,7 +15,6 @@
   </accessibility>
   <security>
     <capabilities>
-      <capability>network.mjpeg.export</capability>
       <capability>network.http.export</capability>
       <capability>camera.access</capability>
     </capabilities>

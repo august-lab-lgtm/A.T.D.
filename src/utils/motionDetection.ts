@@ -1,10 +1,4 @@
-export interface MotionPoint {
-  x: number;
-  y: number;
-  detected: boolean;
-  confidence: number;
-  id: string;
-}
+import type { MotionPoint } from "../types";
 
 /**
  * Inclusive Skin Detection.

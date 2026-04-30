@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
 import { Badge } from "../components/ui/badge";
-import { FloorPlan } from "../components/FloorPlan";
+import { AxisCamera } from "../components/AxisCamera";
 import { Heatmap } from "../components/Heatmap";
 import { ActivityChart } from "../components/ActivityChart";
 import { Person, SimulationState, MotionPoint } from "../types";
@@ -174,16 +174,15 @@ export default function App() {
           <CardHeader>
             <CardTitle className="text-white flex items-center gap-2">
               <Radar className="w-5 h-5 text-red-500" />
-              Tactical Display
+              Axis Camera Display
             </CardTitle>
             <CardDescription className="text-slate-400">
-              Real-time multi-target acquisition
+              Integrated Axis camera live feed and target tracking
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <FloorPlan 
-              people={state.people} 
-              bounds={BOUNDS} 
+            <AxisCamera
+              bounds={BOUNDS}
               onTrackedPositionUpdate={handleTrackedPositionUpdate}
             />
           </CardContent>

@@ -22,6 +22,14 @@ export interface ActivityDataPoint {
   count: number;
 }
 
+export interface MotionPoint {
+  x: number;
+  y: number;
+  detected: boolean;
+  confidence: number;
+  id: string;
+}
+
 export interface SimulationState {
   people: Person[];
   activityHistory: ActivityDataPoint[];
