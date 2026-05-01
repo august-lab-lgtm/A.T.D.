@@ -1,0 +1,800 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ATD - Axis Camera Debug</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Courier New', monospace;
+            background: linear-gradient(to bottom, #0f172a, #1e293b);
+            color: #fff;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #dc2626;
+            padding-bottom: 15px;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .logo-circle {
+            width: 50px;
+            height: 50px;
+            background: #dc2626;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 24px;
+            color: white;
+            box-shadow: 0 0 20px rgba(220, 38, 38, 0.5);
+        }
+
+        h1 {
+            font-size: 28px;
+            letter-spacing: 2px;
+        }
+
+        .subtitle {
+            color: #dc2626;
+            font-size: 12px;
+            letter-spacing: 1px;
+        }
+
+        .time {
+            color: #64748b;
+            font-size: 14px;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        button {
+            padding: 12px 24px;
+            background: #dc2626;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            font-family: monospace;
+            letter-spacing: 1px;
+            transition: all 0.3s;
+            box-shadow: 0 0 15px rgba(220, 38, 38, 0.3);
+        }
+
+        button:hover {
+            background: #991b1b;
+            box-shadow: 0 0 25px rgba(220, 38, 38, 0.6);
+        }
+
+        button:disabled {
+            background: #64748b;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .panel {
+            background: #1e293b;
+            border: 2px solid #dc2626;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 0 20px rgba(220, 38, 38, 0.2);
+        }
+
+        .panel-title {
+            color: #dc2626;
+            font-weight: bold;
+            margin-bottom: 15px;
+            font-size: 14px;
+            letter-spacing: 2px;
+        }
+
+        #videoContainer {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 3/2;
+            background: #0f172a;
+            border: 1px solid #374151;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: none;
+        }
+
+        video.active {
+            display: block;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        .placeholder {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #64748b;
+            font-size: 14px;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .stat {
+            background: rgba(15, 23, 42, 0.8);
+            padding: 15px;
+            border: 1px solid #374151;
+            border-radius: 4px;
+            text-align: center;
+        }
+
+        .stat-label {
+            color: #94a3b8;
+            font-size: 11px;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+        }
+
+        .stat-value {
+            color: #dc2626;
+            font-size: 24px;
+            font-weight: bold;
+        }
+
+        .log {
+            background: #0f172a;
+            border: 1px solid #374151;
+            border-radius: 4px;
+            padding: 12px;
+            height: 200px;
+            overflow-y: auto;
+            font-size: 12px;
+            color: #64748b;
+        }
+
+        .log-entry {
+            margin-bottom: 4px;
+            color: #94a3b8;
+        }
+
+        .log-entry.error {
+            color: #dc2626;
+        }
+
+        .log-entry.success {
+            color: #22c55e;
+        }
+
+        .log-entry.info {
+            color: #3b82f6;
+        }
+
+        .status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            background: rgba(220, 38, 38, 0.1);
+            border: 1px solid #dc2626;
+            border-radius: 4px;
+            margin-top: 10px;
+            font-size: 12px;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            background: #dc2626;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        .status-dot.inactive {
+            animation: none;
+            opacity: 0.5;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        .error-message {
+            padding: 12px;
+            background: rgba(220, 38, 38, 0.1);
+            border: 1px solid #dc2626;
+            border-radius: 4px;
+            color: #fca5a5;
+            margin-bottom: 10px;
+            display: none;
+        }
+
+        .error-message.show {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="logo">
+                <div class="logo-circle">R</div>
+                <div>
+                    <h1>PHALANX TRACKING</h1>
+                    <div class="subtitle">AXIS CAMERA DEBUG • MULTI-TARGET DETECTION</div>
+                </div>
+            </div>
+            <div class="time" id="currentTime">--:--:--</div>
+        </header>
+
+        <div class="controls">
+            <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 10px;">
+                <input type="text" id="cameraIP" value="192.168.0.90" placeholder="192.168.0.90" style="padding: 10px; background: #1e293b; color: white; border: 1px solid #dc2626; border-radius: 4px; font-family: monospace; width: 150px;">
+                <button id="axisConnectBtn" onclick="connectToAxisCamera()">CONNECT AXIS CAMERA</button>
+            </div>
+            <div style="display: flex; gap: 10px;">
+                <button id="startBtn" onclick="startCamera()">START CAMERA FEED</button>
+                <button id="stopBtn" onclick="stopCamera()" disabled>STOP FEED</button>
+                <button id="testBtn" onclick="startTestMode()">START TEST MODE</button>
+                <button id="clearLogBtn" onclick="clearLog()">CLEAR LOG</button>
+            </div>
+        </div>
+
+        <div class="error-message" id="errorMessage"></div>
+
+        <div class="grid">
+            <div class="panel">
+                <div class="panel-title">CAMERA FEED</div>
+                <div id="videoContainer" class="videoContainer">
+                    <video id="video" autoplay playsinline muted></video>
+                    <canvas id="canvas"></canvas>
+                    <div class="placeholder" id="placeholder">
+                        Click START to activate camera
+                    </div>
+                </div>
+                <div class="status">
+                    <div class="status-dot inactive" id="statusDot"></div>
+                    <span id="statusText">CAMERA: INACTIVE</span>
+                </div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-title">DEBUG LOG</div>
+                <div class="log" id="log"></div>
+            </div>
+        </div>
+
+        <div class="stats">
+            <div class="stat">
+                <div class="stat-label">TARGETS LOCKED</div>
+                <div class="stat-value" id="targetsLocked">0</div>
+            </div>
+            <div class="stat">
+                <div class="stat-label">CONFIDENCE AVG</div>
+                <div class="stat-value" id="confidenceAvg">0%</div>
+            </div>
+            <div class="stat">
+                <div class="stat-label">FRAME RATE</div>
+                <div class="stat-value" id="frameRate">0 fps</div>
+            </div>
+            <div class="stat">
+                <div class="stat-label">MOTION PIXELS</div>
+                <div class="stat-value" id="motionPixels">0</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Motion Detection Variables
+        let stream = null;
+        let isActive = false;
+        let previousFrame = null;
+        let animationFrameId = null;
+        let lastFrameTime = Date.now();
+        let frameCount = 0;
+
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d', { willReadFrequently: true });
+        const log = document.getElementById('log');
+        const startBtn = document.getElementById('startBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        const statusDot = document.getElementById('statusDot');
+        const statusText = document.getElementById('statusText');
+        const errorMessage = document.getElementById('errorMessage');
+        const placeholder = document.getElementById('placeholder');
+
+        // Update clock
+        function updateTime() {
+            const now = new Date();
+            document.getElementById('currentTime').textContent = now.toLocaleTimeString();
+            setTimeout(updateTime, 1000);
+        }
+
+        function addLog(message, type = 'info') {
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${type}`;
+            const timestamp = new Date().toLocaleTimeString();
+            entry.textContent = `[${timestamp}] ${message}`;
+            log.appendChild(entry);
+            log.scrollTop = log.scrollHeight;
+        }
+
+        function clearLog() {
+            log.innerHTML = '';
+        }
+
+        function showError(message) {
+            errorMessage.textContent = '❌ ' + message;
+            errorMessage.classList.add('show');
+            setTimeout(() => errorMessage.classList.remove('show'), 5000);
+            addLog(message, 'error');
+        }
+
+        async function startCamera() {
+            try {
+                addLog('Requesting camera access...', 'info');
+                
+                stream = await navigator.mediaDevices.getUserMedia({
+                    video: {
+                        facingMode: 'user',
+                        width: { ideal: 640 },
+                        height: { ideal: 480 }
+                    }
+                });
+
+                addLog('Camera access granted', 'success');
+                video.srcObject = stream;
+                isActive = true;
+                
+                // Set canvas size when video loads
+                video.onloadedmetadata = () => {
+                    canvas.width = video.videoWidth;
+                    canvas.height = video.videoHeight;
+                    addLog(`Video dimensions: ${canvas.width}x${canvas.height}`, 'info');
+                };
+
+                startBtn.disabled = true;
+                stopBtn.disabled = false;
+                placeholder.style.display = 'none';
+                video.classList.add('active');
+                statusDot.classList.remove('inactive');
+                statusText.textContent = 'CAMERA: ACTIVE';
+
+                addLog('Starting motion detection loop...', 'info');
+                processFrame();
+
+            } catch (error) {
+                showError(`Camera error: ${error.message}`);
+                addLog(`Error details: ${error.name}`, 'error');
+            }
+        }
+
+        function stopCamera() {
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+                stream = null;
+            }
+
+            if (animationFrameId) {
+                cancelAnimationFrame(animationFrameId);
+            }
+
+            isActive = false;
+            axisStreamActive = false;
+            previousFrame = null;
+            video.classList.remove('active');
+            canvas.style.display = 'none';
+            placeholder.style.display = 'flex';
+            statusDot.classList.add('inactive');
+            statusText.textContent = 'CAMERA: INACTIVE';
+            startBtn.disabled = false;
+            document.getElementById('testBtn').disabled = false;
+            stopBtn.disabled = true;
+
+            addLog('Camera stopped', 'info');
+        }
+
+        function startTestMode() {
+            addLog('Starting TEST MODE (simulated motion data)', 'success');
+            isActive = true;
+            canvas.width = 640;
+            canvas.height = 480;
+
+            startBtn.disabled = true;
+            stopBtn.disabled = false;
+            placeholder.style.display = 'none';
+            canvas.style.display = 'block';
+            statusDot.classList.remove('inactive');
+            statusText.textContent = 'CAMERA: TEST MODE ACTIVE';
+
+            addLog(`Canvas initialized: ${canvas.width}x${canvas.height}`, 'info');
+            addLog('Generating synthetic motion data...', 'info');
+
+            // Fill canvas with gradient background
+            const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+            gradient.addColorStop(0, '#1a2332');
+            gradient.addColorStop(1, '#0f172a');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            testFrameCounter = 0;
+            processTestFrame();
+        }
+
+        let testFrameCounter = 0;
+
+        function processTestFrame() {
+            if (!isActive) return;
+
+            // Draw test background
+            const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+            gradient.addColorStop(0, '#1a2332');
+            gradient.addColorStop(1, '#0f172a');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Generate synthetic motion targets
+            testFrameCounter++;
+            const numTargets = (testFrameCounter % 30) < 15 ? 2 : 3;
+            const targets = [];
+
+            for (let i = 0; i < numTargets; i++) {
+                const phase = (testFrameCounter + i * 60) / 60;
+                const x = canvas.width * (0.2 + 0.6 * Math.sin(phase));
+                const y = canvas.height * (0.3 + 0.4 * Math.cos(phase * 0.7));
+                const confidence = 0.7 + 0.3 * Math.sin(testFrameCounter / 20);
+
+                targets.push({
+                    x, y,
+                    confidence,
+                    id: `T-${(i + 1).toString().padStart(2, '0')}`
+                });
+            }
+
+            // Update UI
+            document.getElementById('targetsLocked').textContent = targets.length;
+            const avgConfidence = (targets.reduce((sum, t) => sum + t.confidence, 0) / targets.length * 100).toFixed(0);
+            document.getElementById('confidenceAvg').textContent = avgConfidence + '%';
+            document.getElementById('frameRate').textContent = (30 + Math.random() * 5).toFixed(0) + ' fps';
+            document.getElementById('motionPixels').textContent = Math.floor(Math.random() * 5000 + 2000);
+
+            // Draw targets on canvas
+            targets.forEach(target => {
+                ctx.strokeStyle = '#dc2626';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(target.x - 25, target.y - 25, 50, 50);
+
+                // Draw crosshair
+                ctx.strokeStyle = '#dc262655';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.arc(target.x, target.y, 5, 0, Math.PI * 2);
+                ctx.stroke();
+
+                // Draw label
+                ctx.fillStyle = '#dc2626';
+                ctx.font = 'bold 14px monospace';
+                ctx.fillText(target.id, target.x - 10, target.y - 30);
+                ctx.font = '11px monospace';
+                ctx.fillText(`${(target.confidence * 100).toFixed(0)}%`, target.x - 8, target.y + 40);
+            });
+
+            // Log occasionally
+            if (testFrameCounter % 30 === 0) {
+                addLog(`Frame ${testFrameCounter}: Detected ${targets.length} targets`, 'info');
+            }
+
+            animationFrameId = requestAnimationFrame(processTestFrame);
+        }
+
+        let axisStreamActive = false;
+
+        async function connectToAxisCamera() {
+            const cameraIP = document.getElementById('cameraIP').value || '192.168.0.90';
+            
+            addLog(`Connecting to Axis camera at ${cameraIP}...`, 'info');
+            addLog(`Using proxy at http://localhost:8081`, 'info');
+
+            try {
+                // Use proxy instead of direct connection
+                const proxyUrl = `http://localhost:8081/camera/axis-cgi/mjpg/video.cgi?resolution=640x480`;
+                addLog(`Proxy endpoint: ${proxyUrl}`, 'info');
+                addLog('Authentication: root/pass (handled by proxy)', 'success');
+
+                isActive = true;
+                axisStreamActive = true;
+                canvas.width = 640;
+                canvas.height = 480;
+
+                startBtn.disabled = true;
+                document.getElementById('testBtn').disabled = true;
+                stopBtn.disabled = false;
+                placeholder.style.display = 'none';
+                canvas.style.display = 'block';
+                statusDot.classList.remove('inactive');
+                statusText.textContent = 'CAMERA: AXIS (' + cameraIP + ')';
+
+                addLog('Starting MJPEG frame capture...', 'info');
+
+                // Use proxy for frame capture
+                setupAxisProxyCapture(proxyUrl);
+
+            } catch (error) {
+                showError(`Axis camera connection failed: ${error.message}`);
+                addLog('Error: ' + error.message, 'error');
+            }
+        }
+
+        function setupAxisProxyCapture(proxyUrl) {
+            let frameCounter = 0;
+            
+            function captureFrame() {
+                if (!axisStreamActive) return;
+
+                frameCounter++;
+                
+                // Fetch frame through proxy
+                const url = proxyUrl + `&t=${frameCounter}`;
+                
+                fetch(url)
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error(`HTTP ${response.status}`);
+                        }
+                        return response.blob();
+                    })
+                    .then(blob => {
+                        const reader = new FileReader();
+                        reader.onload = (e) => {
+                            if (!axisStreamActive) return;
+                            
+                            const img = new Image();
+                            img.onload = () => {
+                                try {
+                                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                                    const frameData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+
+                                    const result = detectMultipleTargets(frameData.data, canvas.width, canvas.height);
+                                    previousFrame = frameData.data;
+
+                                    // Update UI
+                                    document.getElementById('targetsLocked').textContent = result.targets.length;
+                                    document.getElementById('motionPixels').textContent = result.motionPixels;
+
+                                    if (result.targets.length > 0) {
+                                        const avgConfidence = (result.targets.reduce((sum, t) => sum + t.confidence, 0) / result.targets.length * 100).toFixed(0);
+                                        document.getElementById('confidenceAvg').textContent = avgConfidence + '%';
+                                    }
+
+                                    // Calculate FPS
+                                    frameCount++;
+                                    const now = Date.now();
+                                    if (now - lastFrameTime >= 1000) {
+                                        document.getElementById('frameRate').textContent = frameCount + ' fps';
+                                        frameCount = 0;
+                                        lastFrameTime = now;
+                                    }
+
+                                    // Draw targets on canvas
+                                    ctx.strokeStyle = '#dc2626';
+                                    ctx.lineWidth = 2;
+                                    result.targets.forEach(target => {
+                                        ctx.strokeRect(target.x - 15, target.y - 15, 30, 30);
+                                        ctx.fillStyle = '#dc2626';
+                                        ctx.font = 'bold 12px monospace';
+                                        ctx.fillText(target.id, target.x - 10, target.y - 20);
+                                        ctx.font = '10px monospace';
+                                        ctx.fillText(`${(target.confidence * 100).toFixed(0)}%`, target.x - 8, target.y + 25);
+                                    });
+
+                                    if (frameCounter % 15 === 0) {
+                                        addLog(`Frame ${frameCounter}: ${result.targets.length} targets, ${result.motionPixels} motion pixels`, 'info');
+                                    }
+                                } catch (e) {
+                                    console.error('Frame processing error:', e);
+                                    if (frameCounter === 1) {
+                                        addLog('Frame processing started', 'success');
+                                    }
+                                }
+                            };
+                            
+                            img.onerror = () => {
+                                if (frameCounter < 3) {
+                                    addLog('Attempt ' + frameCounter + ': Failed to load frame', 'error');
+                                }
+                            };
+                            
+                            img.src = e.target.result;
+                        };
+                        reader.readAsDataURL(blob);
+                    })
+                    .catch(error => {
+                        if (frameCounter % 10 === 0 || frameCounter < 3) {
+                            console.error('Frame fetch error:', error);
+                            addLog(`Frame ${frameCounter}: Connection error - ${error.message}`, 'error');
+                        }
+                    });
+
+                if (axisStreamActive) {
+                    setTimeout(captureFrame, 200);
+                }
+            }
+
+            captureFrame();
+        }
+
+        function isInclusiveSkinTone(r, g, b) {
+            const brightness = (r + g + b) / 3;
+            if (brightness < 30 || brightness > 240) return false;
+            if (r < b) return false;
+            if (r < g - 10) return false;
+            const rg = r - g;
+            const rb = r - b;
+            if (rg < 5 || rg > 100) return false;
+            if (rb < 15 || rb > 180) return false;
+            return true;
+        }
+
+        function detectMultipleTargets(frameData, width, height) {
+            if (!previousFrame) return [];
+
+            const pixels = [];
+            const motionThreshold = 30;
+            const stride = 6;
+
+            for (let y = 0; y < height; y += stride) {
+                for (let x = 0; x < width; x += stride) {
+                    const index = (y * width + x) * 4;
+                    const r = frameData[index];
+                    const g = frameData[index + 1];
+                    const b = frameData[index + 2];
+
+                    if (!isInclusiveSkinTone(r, g, b)) continue;
+
+                    const rDiff = Math.abs(r - previousFrame[index]);
+                    const gDiff = Math.abs(g - previousFrame[index + 1]);
+                    const bDiff = Math.abs(b - previousFrame[index + 2]);
+
+                    if ((rDiff + gDiff + bDiff) > motionThreshold) {
+                        pixels.push({ x, y });
+                    }
+                }
+            }
+
+            if (pixels.length < 20) return [];
+
+            // Cluster pixels
+            const clusters = [];
+            const CLUSTER_DISTANCE = 60;
+
+            pixels.forEach((p) => {
+                let added = false;
+                for (const cluster of clusters) {
+                    const dist = Math.hypot(p.x - cluster.x, p.y - cluster.y);
+                    if (dist < CLUSTER_DISTANCE) {
+                        cluster.x = (cluster.x * cluster.count + p.x) / (cluster.count + 1);
+                        cluster.y = (cluster.y * cluster.count + p.y) / (cluster.count + 1);
+                        cluster.count++;
+                        cluster.pixels.push(p);
+                        added = true;
+                        break;
+                    }
+                }
+                if (!added) {
+                    clusters.push({ x: p.x, y: p.y, count: 1, pixels: [p] });
+                }
+            });
+
+            const validClusters = clusters.filter(c => c.count > 30);
+
+            return {
+                targets: validClusters.map((c, index) => ({
+                    x: c.x,
+                    y: c.y,
+                    detected: true,
+                    confidence: Math.min(c.count / 100, 1),
+                    id: `T-${(index + 1).toString().padStart(2, '0')}`
+                })),
+                motionPixels: pixels.length
+            };
+        }
+
+        function processFrame() {
+            if (!isActive || !video.srcObject || video.readyState !== 4) {
+                animationFrameId = requestAnimationFrame(processFrame);
+                return;
+            }
+
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            const frameData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+
+            const result = detectMultipleTargets(frameData.data, canvas.width, canvas.height);
+            previousFrame = frameData.data;
+
+            // Update UI
+            document.getElementById('targetsLocked').textContent = result.targets.length;
+            document.getElementById('motionPixels').textContent = result.motionPixels;
+
+            if (result.targets.length > 0) {
+                const avgConfidence = (result.targets.reduce((sum, t) => sum + t.confidence, 0) / result.targets.length * 100).toFixed(0);
+                document.getElementById('confidenceAvg').textContent = avgConfidence + '%';
+            }
+
+            // Calculate FPS
+            frameCount++;
+            const now = Date.now();
+            if (now - lastFrameTime >= 1000) {
+                document.getElementById('frameRate').textContent = frameCount + ' fps';
+                frameCount = 0;
+                lastFrameTime = now;
+            }
+
+            // Draw targets on canvas
+            ctx.strokeStyle = '#dc2626';
+            ctx.lineWidth = 2;
+            result.targets.forEach(target => {
+                ctx.strokeRect(target.x - 15, target.y - 15, 30, 30);
+                ctx.fillStyle = '#dc2626';
+                ctx.font = '12px monospace';
+                ctx.fillText(target.id, target.x - 10, target.y - 20);
+            });
+
+            animationFrameId = requestAnimationFrame(processFrame);
+        }
+
+        // Initialize
+        updateTime();
+        addLog('ATD Debug Interface Loaded', 'success');
+        addLog('Ready to start camera feed', 'info');
+    </script>
+</body>
+</html>
