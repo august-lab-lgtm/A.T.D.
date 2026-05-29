@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Simple proxy server for Axis camera to bypass CORS and handle authentication
-Includes MJPEG frame extraction
+Includes MJPEG frame extraction and automatic camera discovery
 """
 import http.server
 import socketserver
@@ -10,13 +10,106 @@ import urllib.error
 import base64
 import sys
 import re
+import socket
+import json
+import ipaddress
 from urllib.parse import urlparse, parse_qs
 from io import BytesIO
+from threading import Thread, Lock
 
 CAMERA_IP = "192.168.0.90"
 CAMERA_USERNAME = "root"
 CAMERA_PASSWORD = "pass"
 PROXY_PORT = 8081
+
+# Cache for discovered cameras
+discovered_cameras = []
+discovery_lock = Lock()
+
+def get_local_network_ips():
+    """Get all potential Axis camera IPs in local network"""
+    ips = []
+    try:
+        # Get local IP
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(("8.8.8.8", 80))
+        local_ip = s.getsockname()[0]
+        s.close()
+        
+        # Get network prefix (assume /24 subnet)
+        network_prefix = ".".join(local_ip.split(".")[:3])
+        
+        # Also add common private ranges
+        ranges = [
+            network_prefix,
+            "192.168.1",
+            "192.168.0",
+            "10.0.0",
+            "10.0.1",
+            "172.16.0"
+        ]
+        
+        for prefix in ranges:
+            for i in range(1, 255):
+                ips.append(f"{prefix}.{i}")
+        
+        return ips
+    except Exception as e:
+        print(f"[DISCOVERY] Error getting network info: {e}", file=sys.stderr)
+        # Fall back to common ranges
+        return [f"192.168.1.{i}" for i in range(1, 255)] + [f"192.168.0.{i}" for i in range(1, 255)]
+
+def is_axis_camera(ip):
+    """Check if IP has an Axis camera"""
+    try:
+        url = f"http://{ip}/axis-cgi/param.cgi?action=list&group=ImageSource"
+        
+        auth_str = f"{CAMERA_USERNAME}:{CAMERA_PASSWORD}"
+        auth_bytes = auth_str.encode('ascii')
+        auth_b64 = base64.b64encode(auth_bytes).decode('ascii')
+        
+        req = urllib.request.Request(url)
+        req.add_header('Authorization', f'Basic {auth_b64}')
+        req.add_header('User-Agent', 'ATD-Discovery/1.0')
+        
+        with urllib.request.urlopen(req, timeout=1) as response:
+            content = response.read().decode('utf-8')
+            # Check for Axis-specific response
+            if 'ImageSource' in content or 'Axis' in content:
+                return True
+    except:
+        pass
+    
+    return False
+
+def discover_cameras_threaded():
+    """Discover cameras in background"""
+    global discovered_cameras
+    
+    try:
+        print("[DISCOVERY] Starting camera discovery scan...", file=sys.stderr)
+        found = []
+        ips = get_local_network_ips()
+        
+        # Sample IPs instead of checking all (faster)
+        sampled_ips = ips[::8]  # Check every 8th IP
+        
+        for ip in sampled_ips:
+            if is_axis_camera(ip):
+                print(f"[DISCOVERY] Found Axis camera at {ip}", file=sys.stderr)
+                found.append(ip)
+                if len(found) >= 3:  # Stop after finding 3 cameras
+                    break
+        
+        if found:
+            with discovery_lock:
+                discovered_cameras = found
+            print(f"[DISCOVERY] Discovery complete. Found {len(found)} camera(s)", file=sys.stderr)
+        else:
+            print("[DISCOVERY] No Axis cameras found", file=sys.stderr)
+            
+    except Exception as e:
+        print(f"[DISCOVERY] Error during discovery: {e}", file=sys.stderr)
 
 class AxisCameraProxyHandler(http.server.SimpleHTTPRequestHandler):
     def do_GET(self):
@@ -26,6 +119,11 @@ class AxisCameraProxyHandler(http.server.SimpleHTTPRequestHandler):
         path = self.path
         
         print(f"[PROXY] GET request: {path}", file=sys.stderr)
+        
+        # Handle discovery endpoint
+        if path == '/discover' or path == '/discover/':
+            self.handle_discovery()
+            return
         
         # Route to camera endpoints
         if path.startswith('/camera'):
@@ -192,19 +290,54 @@ class AxisCameraProxyHandler(http.server.SimpleHTTPRequestHandler):
         self.send_header('Access-Control-Max-Age', '3600')
         self.end_headers()
     
+    def handle_discovery(self):
+        """Handle camera discovery request"""
+        try:
+            with discovery_lock:
+                cameras = discovered_cameras.copy()
+            
+            response_data = {
+                "cameras": cameras,
+                "status": "complete" if cameras else "no_cameras_found"
+            }
+            
+            response_json = json.dumps(response_data)
+            response_bytes = response_json.encode('utf-8')
+            
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/json')
+            self.send_header('Content-Length', len(response_bytes))
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.send_header('Cache-Control', 'no-cache, no-store, must-revalidate')
+            self.end_headers()
+            self.wfile.write(response_bytes)
+            
+            print(f"[DISCOVERY] Returned {len(cameras)} camera(s)", file=sys.stderr)
+        except Exception as e:
+            print(f"[DISCOVERY] Error handling discovery request: {e}", file=sys.stderr)
+            self.send_response(500)
+            self.send_header('Content-Type', 'application/json')
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.end_headers()
+            self.wfile.write(json.dumps({"error": str(e)}).encode())
+    
     def log_message(self, format, *args):
         """Custom logging"""
         print(f"[PROXY] {format % args}", file=sys.stderr)
 
 if __name__ == '__main__':
-    import socket
     handler = AxisCameraProxyHandler
+    
+    # Start camera discovery in background
+    discovery_thread = Thread(target=discover_cameras_threaded, daemon=True)
+    discovery_thread.start()
     
     with socketserver.TCPServer(("", PROXY_PORT), handler) as httpd:
         print(f"Axis Camera Proxy Server running on port {PROXY_PORT}")
         print(f"Camera: http://{CAMERA_IP}")
         print(f"Proxy: http://localhost:{PROXY_PORT}")
         print(f"Access camera via: http://localhost:{PROXY_PORT}/camera/axis-cgi/mjpg/video.cgi")
+        print(f"Auto-discovery: http://localhost:{PROXY_PORT}/discover")
         print("Press Ctrl+C to stop")
         print()
         

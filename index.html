@@ -607,6 +607,37 @@
         updateTime();
         addLog('ATD Debug Interface Loaded', 'success');
         addLog('Ready to start camera feed', 'info');
+        
+        // Auto-discover Axis camera on page load
+        async function discoverAxisCamera() {
+            try {
+                addLog('Scanning network for Axis cameras...', 'info');
+                const response = await fetch('http://localhost:8081/discover');
+                const data = await response.json();
+                
+                if (data.cameras && data.cameras.length > 0) {
+                    const cameraIP = data.cameras[0];
+                    document.getElementById('cameraIP').value = cameraIP;
+                    addLog(`Found Axis camera at ${cameraIP}`, 'success');
+                    
+                    // Auto-connect to the discovered camera
+                    setTimeout(() => {
+                        addLog('Auto-connecting to discovered camera...', 'info');
+                        connectToAxisCamera();
+                    }, 1500);
+                } else {
+                    addLog('No Axis cameras found on network', 'error');
+                }
+            } catch (error) {
+                addLog(`Auto-discovery failed: ${error.message}`, 'error');
+                console.error('Discovery error:', error);
+            }
+        }
+        
+        // Start discovery when page loads
+        window.addEventListener('load', () => {
+            setTimeout(discoverAxisCamera, 500);
+        });
     </script>
 </body>
 </html>
