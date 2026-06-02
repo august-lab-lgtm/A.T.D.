@@ -25,6 +25,7 @@ import {
   generateActivityData,
   maintainActivityHistory,
 } from "./utils/simulation";
+import { getCameraErrorMessage, getCameraHelpText } from "./utils/camera";
 
 type CardProps = PropsWithChildren<HTMLAttributes<HTMLDivElement>>;
 
@@ -117,7 +118,7 @@ function AxisCamera({ bounds, onTrackedPositionUpdate }: AxisCameraProps) {
       }
     } catch (err) {
       console.error("Axis camera access error:", err);
-      setError("Unable to access camera. Please check permissions.");
+      setError(`${getCameraErrorMessage(err)} ${getCameraHelpText()}`.trim());
       setIsActive(false);
     }
   }, [bounds]);

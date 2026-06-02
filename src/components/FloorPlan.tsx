@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { Person } from "../types";
 import { Camera, CameraOff, AlertCircle, Crosshair, Radar } from "lucide-react";
 import { detectMultipleTargets } from "../utils/motionDetection";
+import { getCameraErrorMessage, getCameraHelpText } from "../utils/camera";
 import type { MotionPoint } from "../types";
 
 interface FloorPlanProps {
@@ -46,7 +47,7 @@ export function FloorPlan({ people, bounds, onTrackedPositionUpdate }: FloorPlan
       }
     } catch (err) {
       console.error("Camera access error:", err);
-      setError("Unable to access camera. Please check permissions.");
+      setError(`${getCameraErrorMessage(err)} ${getCameraHelpText()}`.trim());
       setIsActive(false);
     }
   };
